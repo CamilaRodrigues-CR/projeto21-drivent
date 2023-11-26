@@ -1,5 +1,4 @@
 import { forbiddenBookingError, notFoundError } from "@/errors";
-import { cannotListHotelsError } from "@/errors/cannot-list-hotels-error";
 import { CreateBookingParams } from "@/protocols";
 import { enrollmentRepository, ticketsRepository } from "@/repositories";
 import { bookingRepository } from "@/repositories/booking-repository";
@@ -16,7 +15,7 @@ async function validateBooking(userId: number, roomId: number) {
     const type = ticket.TicketType;
 
     if (ticket.status === TicketStatus.RESERVED || type.isRemote || !type.includesHotel) {
-        throw cannotListHotelsError();
+        throw forbiddenBookingError();
     }
 
     const room = await bookingRepository.findRoom(roomId);
@@ -26,9 +25,6 @@ async function validateBooking(userId: number, roomId: number) {
 
 
 async function getBooking(userId: number) {
-    /*
-    usuário não tem reserva (booking) ⇒ status code 404 (Not Found).
-    */
     const booking = await bookingRepository.findBooking(userId)
     if( !booking ) throw notFoundError();
 
@@ -52,13 +48,27 @@ async function postBooking(userId: number, roomId: number) {
 }
 
 
-async function putBooking(userId: number) {
+async function putBooking(userId: number, bookingId: number, roomId: number ) {
+   
+    await validateBooking(userId, roomId);
+
+    const reservation = await getBooking(userId);
+
+    await bookingRepository.incrementCapacityRoom(reservation.roomId);
+    await bookingRepository.decrementCapacityRoom(roomId)
+
+    const updateBooking = await bookingRepository.updateBooking(bookingId, roomId);
+
+    return updateBooking;
+
     /*
+        lógica: vou receber o id da reserva e devo alterar o id do room. Ao fazer isso devo incrementar o valor da capacidade do quarto antigo e decrementar o valor do quarto novo!
+
     - A troca pode ser efetuada para usuários que possuem reservas.
     - A troca pode ser efetuada apenas para quartos livres.
-    - `roomId` não existente ⇒ deve retornar status code `404 (Not Found)`.
-    - `roomId` sem reserva ⇒ deve retornar status code `403 (Forbidden)`.
-    - `roomId` sem vaga no novo quarto ⇒ deve retornar status code `403 (Forbidden)`.
+    - `roomId` não existente ⇒ deve retornar status code `404 (Not Found)`.  => OK
+    - `roomId` sem reserva ⇒ deve retornar status code `403 (Forbidden)`.  => 
+    - `roomId` sem vaga no novo quarto ⇒ deve retornar status code `403 (Forbidden)`. => OK
     - Fora da regra de negócio ⇒ deve retornar status code `403 (Forbidden)`.
     */
 }

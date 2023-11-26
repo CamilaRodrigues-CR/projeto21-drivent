@@ -18,7 +18,7 @@ export async function getBooking(req: AuthenticatedRequest, res: Response) {
 
 export async function postBooking(req: AuthenticatedRequest, res: Response) {
     const { userId } = req;
-    const { roomId } = req.body as InputBookingBody
+    const { roomId } = req.body as InputBookingBody;
 
     const booking = await bookingService.postBooking(userId, roomId)
 
@@ -27,8 +27,11 @@ export async function postBooking(req: AuthenticatedRequest, res: Response) {
 
 export async function putBooking(req: AuthenticatedRequest, res: Response) {
     const { userId } = req;
+    const bookingId = Number(req.params.bookingId);
+    const { roomId } = req.body as InputBookingBody;
 
-    const booking = await bookingService.putBooking(userId)
+
+    const booking = await bookingService.putBooking(userId, bookingId, roomId)
 
     res.status(httpStatus.OK).send(booking)
 }
