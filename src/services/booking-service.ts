@@ -14,9 +14,7 @@ async function validateBooking(userId: number, roomId: number) {
 
     const type = ticket.TicketType;
 
-    if (ticket.status === TicketStatus.RESERVED || type.isRemote || !type.includesHotel) {
-        throw forbiddenBookingError();
-    }
+    if (ticket.status === TicketStatus.RESERVED || type.isRemote || !type.includesHotel) throw forbiddenBookingError();
 
     const room = await bookingRepository.findRoom(roomId);
     if ( !room ) throw notFoundError()
@@ -24,6 +22,16 @@ async function validateBooking(userId: number, roomId: number) {
 }
 
 async function validateUpdateBooking(userId: number, roomId: number){
+    const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
+    if (!enrollment) throw notFoundError();
+
+    const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
+    if (!ticket) throw notFoundError();
+
+    const type = ticket.TicketType;
+
+    if (ticket.status === TicketStatus.RESERVED || type.isRemote || !type.includesHotel) throw forbiddenBookingError();
+    
     const reservation = await bookingRepository.findBooking(userId);
     if ( !reservation ) throw forbiddenBookingError();
    
@@ -61,30 +69,17 @@ async function postBooking(userId: number, roomId: number) {
 
 
 async function putBooking(userId: number, bookingId: number, roomId: number ) {
-   
     await validateUpdateBooking(userId, roomId);
 
     const updateBooking = await bookingRepository.updateBooking(bookingId, roomId);
 
     return updateBooking;
-
-    /*
-        lógica: vou receber o id da reserva e devo alterar o id do room. Ao fazer isso devo incrementar o valor da capacidade do quarto antigo e decrementar o valor do quarto novo!
-
-    - A troca pode ser efetuada para usuários que possuem reservas.
-    - A troca pode ser efetuada apenas para quartos livres.
-    - `roomId` não existente ⇒ deve retornar status code `404 (Not Found)`.  => OK
-    - `roomId` sem reserva ⇒ deve retornar status code `403 (Forbidden)`.  => 
-    - `roomId` sem vaga no novo quarto ⇒ deve retornar status code `403 (Forbidden)`. => OK
-    - Fora da regra de negócio ⇒ deve retornar status code `403 (Forbidden)`.
-    */
 }
-
-
-
 
 export const bookingService = {
     getBooking,
     postBooking,
-    putBooking
+    putBooking,
+    validateBooking,
+    validateUpdateBooking
 }
