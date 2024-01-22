@@ -8,9 +8,6 @@ import * as jwt from 'jsonwebtoken';
 import { TicketStatus } from '@prisma/client';
 import { createHotel, createRoomWithHotelId } from '../factories/hotels-factory';
 import { createBooking, createForbiddenRoom } from '../factories/booking-factory';
-import { bookingService } from '@/services';
-import { bookingRepository, enrollmentRepository } from '@/repositories';
-
 
 beforeAll(async () => {
     await init();
